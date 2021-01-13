@@ -20,7 +20,7 @@ class Categorical(nn.Module):
     linear: nn.Module
         Maps the incoming feature maps to probabilities over the output space.
     """
-    def __init__(self, num_inputs, num_outputs):
+    def __init__(self, num_inputs, num_outputs, multi_discrete=False):
         super(Categorical, self).__init__()
 
         init_ = lambda m: init(
@@ -28,8 +28,14 @@ class Categorical(nn.Module):
             nn.init.orthogonal_,
             lambda x: nn.init.constant_(x, 0),
             gain=0.01)
-
-        self.linear = init_(nn.Linear(num_inputs, num_outputs))
+        if not multi_discrete:
+            self.linear = init_(nn.Linear(num_inputs, num_outputs))
+            self.multi_discrete = multi_discrete
+        else:
+            # creates output heads depending on the number of action dimensions with the output features as the number of sub action dimensions (3)
+            self.linear = [init_(nn.Linear(num_inputs, 3)) for head in range(num_outputs[0])]
+            self.num_outputs = num_outputs
+            self.multi_discrete = multi_discrete
 
     def forward(self, x, deterministic=False):
         """
@@ -57,7 +63,11 @@ class Categorical(nn.Module):
         """
 
         # Predict distribution parameters
-        x = self.linear(x)
+        if not self.multi_discrete:
+            x = self.linear(x)
+        else: self.multi_discrete:
+            outputs = torch.cat([head(x) for head in self.linear])
+            x = x.reshape((x.shape[0], self.num_outputs[0], 3))
 
         # Create distribution and sample
         dist = torch.distributions.Categorical(logits=x)

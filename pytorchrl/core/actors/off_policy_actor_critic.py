@@ -111,6 +111,11 @@ class OffPolicyActorCritic(nn.Module):
             self.scale = None
             self.unscale = None
 
+        elif action_space.__class__.__name__ == "MultiDiscrete":
+            self.dist = get_dist("Categorical")(self.policy_net.num_outputs, action_space, multi_discrete=True)
+            self.scale = None
+            self.unscale = None
+
         elif action_space.__class__.__name__ == "Box":  # Continuous action space
             self.dist = get_dist("SquashedGaussian")(self.policy_net.num_outputs, action_space.shape[0])
             self.scale = Scale(action_space)
