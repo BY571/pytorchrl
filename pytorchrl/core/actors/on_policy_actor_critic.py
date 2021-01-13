@@ -98,7 +98,7 @@ class OnPolicyActorCritic(nn.Module):
             self.unscale = None
 
         elif action_space.__class__.__name__ == "MultiDiscrete":
-            self.dist = get_dist("Categorical")(self.policy_net.num_outputs, action_space, multi_discrete=True)
+            self.dist = get_dist("Categorical")(self.policy_net.num_outputs, action_space.shape, multi_discrete=True)
             self.scale = None
             self.unscale = None
 
@@ -270,6 +270,7 @@ class OnPolicyActorCritic(nn.Module):
             action = self.scale(action)
 
         actor_features, rhs = self.policy_net(obs, rhs, done)
+
         logp_action, entropy_dist = self.dist.evaluate_pred(actor_features, action)
         self.last_actor_features = actor_features
 

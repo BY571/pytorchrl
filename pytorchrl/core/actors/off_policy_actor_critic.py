@@ -112,7 +112,7 @@ class OffPolicyActorCritic(nn.Module):
             self.unscale = None
 
         elif action_space.__class__.__name__ == "MultiDiscrete":
-            self.dist = get_dist("Categorical")(self.policy_net.num_outputs, action_space, multi_discrete=True)
+            self.dist = get_dist("Categorical")(self.policy_net.num_outputs, action_space.shape, multi_discrete=True)
             self.scale = None
             self.unscale = None
 

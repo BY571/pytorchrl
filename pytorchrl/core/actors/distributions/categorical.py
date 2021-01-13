@@ -65,9 +65,9 @@ class Categorical(nn.Module):
         # Predict distribution parameters
         if not self.multi_discrete:
             x = self.linear(x)
-        else: self.multi_discrete:
-            outputs = torch.cat([head(x) for head in self.linear])
-            x = x.reshape((x.shape[0], self.num_outputs[0], 3))
+        else: 
+            x = torch.cat([head(x) for head in self.linear])
+            #x = x.reshape((self.num_outputs[0], 3))
 
         # Create distribution and sample
         dist = torch.distributions.Categorical(logits=x)
@@ -81,10 +81,11 @@ class Categorical(nn.Module):
         # Action log probability
         # logp = dist.log_prob(pred.squeeze( -1)).unsqueeze(-1)
         logp = dist.log_prob(pred.squeeze(-1)).view(pred.size(0), -1).sum(-1).unsqueeze(-1)
-
+        if self.multi_discrete:
+            pred = pred.squeeze().unsqueeze(0)
+            logp = logp.squeeze().unsqueeze(0)
         # Distribution entropy
         entropy_dist = dist.entropy().mean()
-
         return pred, clipped_pred, logp, entropy_dist
 
 
@@ -109,13 +110,20 @@ class Categorical(nn.Module):
         """
 
         # Predict distribution parameters
-        x = self.linear(x)
+        if not self.multi_discrete:
+            x = self.linear(x)
+        else: 
+            x = torch.cat([head(x) for head in self.linear])
+            x = x.reshape((pred.shape[0], self.num_outputs[0], 3)) 
 
         # Create distribution
         dist = torch.distributions.Categorical(logits=x)
 
         # Evaluate log prob of under dist
-        logp = dist.log_prob(pred.squeeze(-1)).unsqueeze(-1).sum(-1, keepdim=True)
+        if not self.multi_discrete:
+            logp = dist.log_prob(pred.squeeze(-1)).unsqueeze(-1).sum(-1, keepdim=True)
+        else:
+            logp = dist.log_prob(pred.squeeze(-1)).unsqueeze(-1).sum(-1, keepdim=True).squeeze()
 
         # Distribution entropy
         entropy_dist = dist.entropy().mean()
